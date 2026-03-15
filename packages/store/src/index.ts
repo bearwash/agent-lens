@@ -44,6 +44,7 @@ export interface Store {
 export { PgStore } from "./pg-store.js";
 export type { PgStoreOptions } from "./pg-store.js";
 export { runMigrations } from "./migrations.js";
+export { AuditTrail } from "./audit-trail.js";
 
 export class MemoryStore implements Store {
   private sessions = new Map<string, AgentSession>();

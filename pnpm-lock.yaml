@@ -71,6 +71,19 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  packages/claude-code-adapter:
+    dependencies:
+      '@agent-lens/otel-config':
+        specifier: workspace:*
+        version: link:../otel-config
+      '@agent-lens/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/openclaw-plugin:
     dependencies:
       '@agent-lens/otel-config':

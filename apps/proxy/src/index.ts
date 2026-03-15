@@ -6,8 +6,9 @@ import { McpStdioProxy } from "./stdio-proxy.js";
 import { StreamableHttpProxy } from "./http-proxy.js";
 import { EventBus } from "./event-bus.js";
 import { ApprovalGate } from "./approval-gate.js";
+import { AgenticFirewall } from "./firewall.js";
 import { DashboardServer } from "./dashboard-server.js";
-import { MemoryStore, PgStore } from "@agent-lens/store";
+import { MemoryStore, PgStore, AuditTrail } from "@agent-lens/store";
 import type { Store } from "@agent-lens/store";
 
 const DEFAULT_DASHBOARD_PORT = 18790;
@@ -34,14 +35,46 @@ async function main() {
   const store = await createStore();
   const eventBus = new EventBus();
   const approvalGate = new ApprovalGate(store, eventBus);
+  const firewall = new AgenticFirewall(store, eventBus);
+
+  // Phase 4: Audit Trail — cryptographically chained append-only log
+  const auditTrail = new AuditTrail(store);
+
+  // Subscribe to eventBus to automatically record audit entries
+  eventBus.subscribe((event) => {
+    switch (event.type) {
+      case "session:start":
+        auditTrail.record({ type: "session.start", session: event.session });
+        break;
+      case "span:start":
+        auditTrail.record({ type: "span.recorded", span: event.span });
+        break;
+      case "span:end":
+        // span:end is an update, not a new span recording — skip to avoid duplication
+        break;
+      case "approval:request":
+        auditTrail.record({ type: "approval.requested", request: event.approval });
+        break;
+      case "approval:decision":
+        auditTrail.record({ type: "approval.decided", decision: event.decision });
+        break;
+      case "branch:create":
+        auditTrail.record({ type: "branch.created", branch: event.branch });
+        break;
+      default:
+        break;
+    }
+  });
 
   // WebSocket server for dashboard real-time events
-  const dashboardServer = new DashboardServer(dashboardPort, store, eventBus, approvalGate);
+  const dashboardServer = new DashboardServer(dashboardPort, store, eventBus, approvalGate, firewall, auditTrail);
   await dashboardServer.start();
 
   // Streamable HTTP proxy
   const httpProxy = new StreamableHttpProxy(httpProxyPort, store, eventBus, approvalGate);
   await httpProxy.start();
+
+  const fwConfig = firewall.getConfig();
 
   console.log(`
   ╔══════════════════════════════════════════════╗
@@ -49,6 +82,7 @@ async function main() {
   ║                                              ║
   ║  Dashboard WS:  ws://localhost:${dashboardPort}        ║
   ║  HTTP Proxy:    http://localhost:${httpProxyPort}       ║
+  ║  Firewall:      ${fwConfig.enabled ? fwConfig.mode.toUpperCase().padEnd(27) : "DISABLED".padEnd(27)}║
   ║                                              ║
   ║  Stdio mode:    pipe through agent-lens      ║
   ╚══════════════════════════════════════════════╝

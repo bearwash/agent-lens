@@ -192,6 +192,48 @@ This is the feature that doesn't exist anywhere else. Not in LangSmith. Not in L
 
 Debug "why did the agent click the wrong button?" by viewing the screenshot **at that exact reasoning step**.
 
+### Agentic Firewall — Security Layer for Autonomous Agents
+
+> *In response to CVE-2026-25253 (ClawHub token theft), Agent Lens now ships a built-in threat detection engine.*
+
+Every MCP tool call is scanned against known attack patterns **before execution**:
+
+| Category | Examples | Default Action |
+|----------|----------|---------------|
+| Token Theft | Exfiltration to suspicious URLs, cookie/token capture | **Block** |
+| Shell Injection | `; rm -rf`, `` `curl` ``, pipe chains | **Block** |
+| Data Exfiltration | Base64-encoding `.env`, `curl` to external IPs | **Block** |
+| Credential Access | Reading `.ssh/*`, `credentials.json`, `~/.aws` | **Alert** |
+| Supply Chain | `npm install` from non-registry sources | **Alert** |
+| Destructive | `DROP TABLE`, `format`, `fdisk` | **Block** |
+
+```
+Mode: ENFORCE (blocks) or MONITOR (alerts only)
+Risk Score: 0-100 per request, auto-block above threshold
+Custom Rules: Add your own regex patterns via REST API
+```
+
+Not just a debugger — an **agentic firewall** that CISOs can actually deploy.
+
+### Claude Code Native Support
+
+Agent Lens works as a transparent observation layer for [Claude Code](https://docs.anthropic.com/en/docs/claude-code):
+
+```typescript
+import { generateMcpConfig } from "@agent-lens/claude-code-adapter";
+
+// Generates the MCP config to route Claude Code through Agent Lens
+const config = generateMcpConfig({ proxyPort: 18791 });
+```
+
+- Auto-detects Claude Code sessions and model (Opus/Sonnet/Haiku)
+- Maps all Claude Code tools (Read, Edit, Bash, Grep, etc.) to categorized spans
+- Extracts thinking blocks as reasoning spans
+- Maps Claude Code's permission system to Approval Gate
+- Auto-configures cost tracking based on detected model
+
+Works with every Claude Code tool: `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`, `WebFetch`, `Agent`, and more.
+
 ---
 
 ## Inference Economics
@@ -312,8 +354,9 @@ agent-lens/
 ├── packages/
 │   ├── protocol/               # Shared TypeScript types (MCP, OTel, Branches)
 │   ├── otel-config/            # OTel 1.37+ GenAI helpers + cost calculator + OTLP export
-│   ├── store/                  # Storage abstraction (MemoryStore + PgStore WORM)
-│   └── openclaw-plugin/        # OpenClaw context-engine integration
+│   ├── store/                  # Storage abstraction (MemoryStore + PgStore WORM + AuditTrail)
+│   ├── openclaw-plugin/        # OpenClaw context-engine integration
+│   └── claude-code-adapter/    # Claude Code native observation adapter
 ├── docker/                     # Docker Compose (PostgreSQL 17 + proxy + dashboard)
 ├── pnpm-workspace.yaml
 └── 4,200+ lines of TypeScript
@@ -333,13 +376,16 @@ agent-lens/
 - [x] **OTel 1.37+**: Full GenAI Semantic Conventions + OTLP export
 - [x] **PostgreSQL WORM**: Append-only audit-grade storage with pgaudit
 - [x] **OpenClaw Plugin**: First-class context-engine integration
+- [x] **Agentic Firewall**: IOC-based threat detection with CVE-2026-25253 coverage
+- [x] **Claude Code Adapter**: Native observation for Anthropic's Claude Code
+- [x] **Reconstitution of Intent**: SHA-256 chained audit trail with JSONL/CSV export (AI Safety Act 2026)
 
-### Phase 4: Compliance & Scale (Next)
+### Phase 5: Scale & Ecosystem (Next)
 
-- [ ] **Reconstitution of Intent** — Export append-only PostgreSQL logs as legally admissible audit trails, compliant with the 2026 AI Safety Act. Every reasoning step, tool call, and human intervention is cryptographically timestamped and immutable.
-- [ ] **P2P Debug Sync** — Sync debug sessions across devices (PC ↔ tablet ↔ phone) using libp2p, with zero server infrastructure. Inspect an agent's live reasoning from your phone while it runs on your workstation.
+- [ ] **P2P Debug Sync** — Sync debug sessions across devices (PC ↔ tablet ↔ phone) using libp2p, with zero server infrastructure
 - [ ] **Visual Branch Diff** — Side-by-side comparison of branch outcomes with token/cost delta highlighting
 - [ ] **Collaborative Approval** — Generate secure one-time URLs for manager/stakeholder approval of high-risk actions
+- [ ] **Firewall Dashboard UI** — Real-time threat map with block/allow/alert statistics
 - [ ] **ClawHub Marketplace** — Official listing as OpenClaw's recommended debug stack
 - [ ] **Rust High-Throughput Proxy** — Handle 10,000+ spans/sec for production fleet monitoring
 

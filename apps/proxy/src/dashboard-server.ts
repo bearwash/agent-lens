@@ -5,11 +5,13 @@
 import { WebSocketServer, type WebSocket } from "ws";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
-import type { DashboardEvent, ApprovalDecision, Branch } from "@agent-lens/protocol";
+import type { DashboardEvent, ApprovalDecision, Branch, ThreatIndicator } from "@agent-lens/protocol";
 import { createBranchSpan, createTraceId } from "@agent-lens/otel-config";
 import type { Store } from "@agent-lens/store";
+import type { AuditTrail } from "@agent-lens/store";
 import type { EventBus } from "./event-bus.js";
 import type { ApprovalGate } from "./approval-gate.js";
+import type { AgenticFirewall } from "./firewall.js";
 
 interface ClientMessage {
   type: string;
@@ -25,6 +27,8 @@ export class DashboardServer {
     private store: Store,
     private eventBus: EventBus,
     private approvalGate: ApprovalGate,
+    private firewall?: AgenticFirewall,
+    private auditTrail?: AuditTrail,
   ) {}
 
   async start(): Promise<void> {
@@ -89,6 +93,114 @@ export class DashboardServer {
 
       if (req.url === "/api/branches" && req.method === "POST") {
         this.handleCreateBranch(req, res);
+        return;
+      }
+
+      // ─── Audit Trail Endpoints ───
+
+      if (req.url?.match(/^\/api\/audit\/[^/]+\/verify$/) && req.method === "GET") {
+        if (this.auditTrail) {
+          this.auditTrail.verify().then((result) => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          });
+          return;
+        }
+        res.writeHead(501, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Audit trail not enabled" }));
+        return;
+      }
+
+      if (req.url?.match(/^\/api\/audit\/[^/]+\/export/) && req.method === "GET") {
+        if (this.auditTrail) {
+          const urlObj = new URL(req.url, `http://localhost:${this.port}`);
+          const sessionId = req.url.split("/api/audit/")[1]!.split("/")[0]!;
+          const format = (urlObj.searchParams.get("format") ?? "jsonl") as "jsonl" | "csv" | "parquet";
+          this.auditTrail.export({
+            sessionId,
+            format,
+            includeAttachments: false,
+          }).then((content) => {
+            const contentType = format === "csv" ? "text/csv" : "application/x-ndjson";
+            res.writeHead(200, { "Content-Type": contentType });
+            res.end(content);
+          }).catch((err) => {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: (err as Error).message }));
+          });
+          return;
+        }
+        res.writeHead(501, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Audit trail not enabled" }));
+        return;
+      }
+
+      if (req.url?.match(/^\/api\/audit\/[^/]+$/) && req.method === "GET") {
+        if (this.auditTrail) {
+          const sessionId = req.url.split("/api/audit/")[1]!;
+          this.auditTrail.getEntries(sessionId).then((entries) => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(entries));
+          });
+          return;
+        }
+        res.writeHead(501, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Audit trail not enabled" }));
+        return;
+      }
+
+      // ─── Firewall Endpoints ───
+
+      if (req.url === "/api/firewall/config" && req.method === "GET") {
+        if (this.firewall) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(this.firewall.getConfig()));
+        } else {
+          res.writeHead(501, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Firewall not enabled" }));
+        }
+        return;
+      }
+
+      if (req.url === "/api/firewall/stats" && req.method === "GET") {
+        if (this.firewall) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(this.firewall.getStats()));
+        } else {
+          res.writeHead(501, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Firewall not enabled" }));
+        }
+        return;
+      }
+
+      if (req.url === "/api/firewall/verdicts" && req.method === "GET") {
+        if (this.firewall) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(this.firewall.getRecentVerdicts()));
+        } else {
+          res.writeHead(501, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Firewall not enabled" }));
+        }
+        return;
+      }
+
+      if (req.url === "/api/firewall/indicators" && req.method === "POST") {
+        if (this.firewall) {
+          this.readBody(req).then((body) => {
+            try {
+              const indicator = JSON.parse(body) as ThreatIndicator;
+              this.firewall!.addIndicator(indicator);
+              res.writeHead(201, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: true, indicator }));
+            } catch {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: "Invalid indicator JSON" }));
+            }
+          });
+        } else {
+          res.writeHead(501, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Firewall not enabled" }));
+        }
         return;
       }
 

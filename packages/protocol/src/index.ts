@@ -196,7 +196,8 @@ export type DashboardEvent =
   | { type: "branch:create"; branch: Branch }
   | { type: "branch:update"; branchId: string; updates: Partial<Branch> }
   | { type: "approval:request"; approval: ApprovalRequest }
-  | { type: "approval:decision"; decision: ApprovalDecision };
+  | { type: "approval:decision"; decision: ApprovalDecision }
+  | { type: "firewall:verdict"; verdict: FirewallVerdict };
 
 // ─── Approval Rule Configuration ───
 
@@ -267,4 +268,35 @@ export interface SyncMessage {
     decisions: ApprovalDecision[];
     lastSeq: number;
   };
+}
+
+// ─── Agentic Firewall ───
+
+export interface ThreatIndicator {
+  id: string;
+  category: "exfiltration" | "injection" | "destructive" | "credential_theft" | "supply_chain" | "token_theft";
+  severity: "low" | "medium" | "high" | "critical";
+  pattern: string;           // Regex pattern to match
+  matchTarget: "tool_name" | "arguments" | "url" | "reasoning";
+  description: string;
+  cve?: string;              // e.g. "CVE-2026-25253"
+  mitre?: string;            // MITRE ATT&CK ID
+}
+
+export interface FirewallVerdict {
+  requestId: string;
+  spanId: string;
+  allowed: boolean;
+  matchedIndicators: ThreatIndicator[];
+  riskScore: number;         // 0-100
+  timestamp: number;
+  action: "allow" | "block" | "quarantine" | "alert";
+}
+
+export interface FirewallConfig {
+  enabled: boolean;
+  mode: "enforce" | "monitor";  // enforce blocks, monitor only alerts
+  indicators: ThreatIndicator[];
+  customRules: ThreatIndicator[];
+  blockThreshold: number;       // Risk score threshold to auto-block (0-100)
 }
