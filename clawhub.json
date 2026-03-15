@@ -1,0 +1,64 @@
+{
+  "$schema": "https://clawhub.dev/schema/plugin/v1.json",
+  "name": "agent-lens",
+  "displayName": "Agent Lens — Time-Travel Debugger",
+  "version": "0.2.0",
+  "description": "Visualize, intercept, and branch AI agent reasoning in real-time. The Git for AI Agents.",
+  "category": "debug-stack",
+  "kind": "context-engine",
+  "author": {
+    "name": "bearwash",
+    "url": "https://github.com/bearwash"
+  },
+  "repository": "https://github.com/bearwash/agent-lens",
+  "license": "MIT",
+  "keywords": [
+    "debugger",
+    "time-travel",
+    "approval-gate",
+    "mcp-proxy",
+    "opentelemetry",
+    "inference-cost",
+    "multimodal",
+    "branching"
+  ],
+  "compatibility": {
+    "openclaw": ">=2026.3.0",
+    "mcp": "2026-03-26",
+    "otel": ">=1.37.0",
+    "node": ">=22.0.0"
+  },
+  "hooks": ["bootstrap", "ingest", "assemble"],
+  "install": {
+    "package": "@agent-lens/openclaw-plugin",
+    "setup": "import { createPlugin } from '@agent-lens/openclaw-plugin'; export default { plugins: [createPlugin()] };"
+  },
+  "features": [
+    {
+      "name": "Approval Gate",
+      "description": "Pause high-risk tool calls for human review before execution"
+    },
+    {
+      "name": "Time-Travel Branching",
+      "description": "Fork agent reasoning at any point, compare alternate timelines"
+    },
+    {
+      "name": "Inference Economics",
+      "description": "Real-time per-span USD cost tracking with cumulative display"
+    },
+    {
+      "name": "Multimodal Viewer",
+      "description": "Inline rendering of screenshots, images, video, and sensor data"
+    },
+    {
+      "name": "OTel 1.37+ Export",
+      "description": "Full GenAI Semantic Conventions compliance with OTLP export"
+    }
+  ],
+  "screenshots": [
+    {
+      "url": "docs/demo.gif",
+      "alt": "Agent Lens time-travel debugging demo"
+    }
+  ]
+}

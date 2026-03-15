@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 120" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="600" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0a0a1a"/>
+      <stop offset="100%" stop-color="#12122a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4f8ff7"/>
+      <stop offset="50%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="150" y1="60" x2="450" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4f8ff7" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#4f8ff7" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#4f8ff7" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="120" rx="12" fill="url(#bg)"/>
+
+  <!-- Subtle glow -->
+  <rect x="100" y="30" width="400" height="60" rx="30" fill="url(#glow)"/>
+
+  <!-- Lens icon -->
+  <g transform="translate(160, 35)">
+    <circle cx="25" cy="25" r="18" stroke="url(#accent)" stroke-width="3" fill="none"/>
+    <line x1="38" y1="38" x2="48" y2="48" stroke="url(#accent)" stroke-width="3" stroke-linecap="round"/>
+    <!-- Inner rings -->
+    <circle cx="25" cy="25" r="10" stroke="#4f8ff7" stroke-width="1" fill="none" opacity="0.4"/>
+    <circle cx="25" cy="25" r="4" fill="#4f8ff7" opacity="0.6"/>
+  </g>
+
+  <!-- Title -->
+  <text x="230" y="55" font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace" font-size="28" font-weight="bold" fill="white" letter-spacing="2">
+    AGENT LENS
+  </text>
+
+  <!-- Subtitle -->
+  <text x="230" y="78" font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace" font-size="11" fill="#8888a0" letter-spacing="1">
+    TIME-TRAVEL DEBUGGER FOR AI AGENTS
+  </text>
+
+  <!-- Decorative brackets -->
+  <text x="205" y="58" font-family="monospace" font-size="30" fill="#4f8ff7" opacity="0.8">[</text>
+  <text x="435" y="58" font-family="monospace" font-size="30" fill="#4f8ff7" opacity="0.8">]</text>
+
+  <!-- Bottom accent line -->
+  <rect x="160" y="95" width="280" height="2" rx="1" fill="url(#accent)" opacity="0.4"/>
+</svg>

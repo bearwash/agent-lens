@@ -213,3 +213,58 @@ export type ApprovalCondition =
   | { type: "server_name"; pattern: string }
   | { type: "argument_match"; key: string; pattern: string }
   | { type: "keyword"; pattern: string };        // matches reasoning text
+
+// ─── Phase 4: Reconstitution of Intent (Audit Export) ───
+
+export interface AuditTrailEntry {
+  /** Monotonically increasing sequence number */
+  seq: number;
+  /** ISO 8601 timestamp with timezone */
+  timestamp: string;
+  /** Cryptographic hash of the previous entry (chain integrity) */
+  prevHash: string;
+  /** SHA-256 hash of this entry's content */
+  contentHash: string;
+  /** The recorded event */
+  event: AuditEvent;
+}
+
+export type AuditEvent =
+  | { type: "session.start"; session: AgentSession }
+  | { type: "span.recorded"; span: AgentSpan }
+  | { type: "branch.created"; branch: Branch }
+  | { type: "approval.requested"; request: ApprovalRequest }
+  | { type: "approval.decided"; decision: ApprovalDecision }
+  | { type: "intervention.reasoning_edited"; spanId: string; originalReasoning: string; editedReasoning: string; editedBy: string }
+  | { type: "session.end"; sessionId: string; finalStatus: string };
+
+export interface AuditExportOptions {
+  sessionId: string;
+  format: "jsonl" | "csv" | "parquet";
+  includeAttachments: boolean;
+  signWithKey?: string;          // Path to PEM key for digital signatures
+}
+
+// ─── Phase 4: P2P Debug Sync ───
+
+export interface PeerNode {
+  peerId: string;                // libp2p peer ID
+  displayName: string;
+  deviceType: "desktop" | "tablet" | "phone";
+  lastSeen: number;
+  syncStatus: "synced" | "syncing" | "offline";
+}
+
+export interface SyncMessage {
+  type: "sync:offer" | "sync:request" | "sync:data" | "sync:ack";
+  peerId: string;
+  sessionId: string;
+  /** For sync:data — the spans/events since last sync */
+  payload?: {
+    spans: AgentSpan[];
+    branches: Branch[];
+    approvals: ApprovalRequest[];
+    decisions: ApprovalDecision[];
+    lastSeq: number;
+  };
+}
