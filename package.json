@@ -1,0 +1,22 @@
+{
+  "name": "agent-lens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Time-travel debugger for AI agents — visualize, intercept, and branch agent reasoning in real-time",
+  "license": "MIT",
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:proxy": "pnpm --filter @agent-lens/proxy run dev",
+    "dev:dashboard": "pnpm --filter @agent-lens/dashboard run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0"
+  }
+}

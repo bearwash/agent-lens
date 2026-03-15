@@ -1,0 +1,19 @@
+FROM node:22-slim AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
+COPY packages/protocol/package.json packages/protocol/
+COPY apps/dashboard/package.json apps/dashboard/
+
+RUN pnpm install --frozen-lockfile || pnpm install
+
+COPY packages/ packages/
+COPY apps/dashboard/ apps/dashboard/
+COPY tsconfig.json .
+
+RUN pnpm --filter @agent-lens/protocol run build
+RUN pnpm --filter @agent-lens/dashboard run build
+
+EXPOSE 3000
+CMD ["pnpm", "--filter", "@agent-lens/dashboard", "run", "start"]

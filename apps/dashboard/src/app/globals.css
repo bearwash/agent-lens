@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a2e;
+  --border: #2a2a3e;
+  --text-primary: #e4e4ef;
+  --text-secondary: #8888a0;
+  --accent-blue: #4f8ff7;
+  --accent-green: #34d399;
+  --accent-red: #f87171;
+  --accent-yellow: #fbbf24;
+  --accent-purple: #a78bfa;
+  --span-thinking: #a78bfa;
+  --span-tool-call: #4f8ff7;
+  --span-tool-result: #34d399;
+  --span-error: #f87171;
+  --span-paused: #fbbf24;
+  --span-branch: #f472b6;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Glow animation for active spans */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--accent-blue); }
+  50% { box-shadow: 0 0 16px var(--accent-blue); }
+}
+
+.span-active {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

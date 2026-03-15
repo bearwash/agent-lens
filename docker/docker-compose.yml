@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: agent_lens
+      POSTGRES_USER: agent_lens
+      POSTGRES_PASSWORD: agent_lens_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_lens"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  proxy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.proxy
+    ports:
+      - "18790:18790"   # Dashboard WebSocket + REST
+      - "18791:18791"   # Streamable HTTP proxy
+    environment:
+      - LENS_DASHBOARD_PORT=18790
+      - LENS_HTTP_PROXY_PORT=18791
+      - LENS_STORE=pg
+      - DATABASE_URL=postgresql://agent_lens:agent_lens_dev@postgres:5432/agent_lens
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_WS_URL=ws://localhost:18790
+    depends_on:
+      - proxy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
