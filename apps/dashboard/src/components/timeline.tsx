@@ -13,13 +13,16 @@ interface TimelineProps {
 export function Timeline({ spans, selectedSpanId, onSelectSpan, onSpanContextMenu }: TimelineProps) {
   if (spans.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-[--text-secondary] gap-3">
-        <div className="text-4xl opacity-20">
-          {"{ }"}
+      <div className="flex flex-col items-center justify-center h-full text-[--text-secondary] gap-3 px-6">
+        <div className="w-10 h-10 rounded-xl bg-[--bg-tertiary] flex items-center justify-center">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[--text-tertiary]">
+            <circle cx="10" cy="10" r="7"/>
+            <path d="M10 7v3l2 2"/>
+          </svg>
         </div>
-        <div className="text-sm">Waiting for agent activity...</div>
-        <div className="text-xs opacity-50">
-          Connect an agent through the MCP proxy to start observing
+        <div className="text-sm font-medium text-center">Waiting for activity</div>
+        <div className="text-xs text-[--text-tertiary] text-center leading-relaxed">
+          Connect an agent through the proxy to start observing its reasoning.
         </div>
       </div>
     );
@@ -35,20 +38,20 @@ export function Timeline({ spans, selectedSpanId, onSelectSpan, onSpanContextMen
   }
 
   return (
-    <div className="p-3 space-y-4 overflow-y-auto h-full">
+    <div className="p-2 space-y-3 overflow-y-auto h-full">
       {[...branches.entries()].map(([branchId, branchSpans]) => (
         <div key={branchId}>
           {branches.size > 1 && (
-            <div className="flex items-center gap-2 mb-2 px-1">
+            <div className="flex items-center gap-2 mb-1.5 px-2 py-1">
               <div
-                className={`w-3 h-0.5 rounded ${branchId === "main" ? "bg-blue-400" : "bg-pink-400"}`}
+                className={`w-2.5 h-0.5 rounded-full ${branchId === "main" ? "bg-blue-400" : "bg-rose-400"}`}
               />
-              <span className="text-[10px] font-bold tracking-widest text-[--text-secondary] uppercase">
-                {branchId === "main" ? "Main Branch" : `Branch: ${branchId.slice(0, 8)}`}
+              <span className="text-[11px] font-medium text-[--text-tertiary]">
+                {branchId === "main" ? "Main" : branchId.slice(0, 8)}
               </span>
             </div>
           )}
-          <div className="space-y-2">
+          <div className="space-y-1">
             {branchSpans.map((span) => (
               <SpanCard
                 key={span.spanId}

@@ -8,18 +8,17 @@ interface BranchTreeProps {
   onSelectBranch: (branchId: string) => void;
 }
 
-const BRANCH_COLORS = [
+const BRANCH_DOTS = [
   "bg-blue-400",
-  "bg-pink-400",
-  "bg-green-400",
-  "bg-purple-400",
-  "bg-orange-400",
+  "bg-rose-400",
+  "bg-emerald-400",
+  "bg-violet-400",
+  "bg-amber-400",
   "bg-cyan-400",
 ];
 
 export function BranchTree({ branches, activeBranchId, onSelectBranch }: BranchTreeProps) {
   const branchList = [
-    // Always include "main" as the root
     {
       branchId: "main",
       parentBranchId: undefined,
@@ -30,24 +29,13 @@ export function BranchTree({ branches, activeBranchId, onSelectBranch }: BranchT
     ...[...branches.values()],
   ];
 
-  // Build tree structure
-  const childMap = new Map<string, Branch[]>();
-  for (const branch of branchList) {
-    const parentId = branch.parentBranchId ?? "__root__";
-    const children = childMap.get(parentId) ?? [];
-    children.push(branch);
-    childMap.set(parentId, children);
-  }
-
   return (
     <div className="p-3">
-      <h3 className="text-[10px] font-bold tracking-widest text-[--text-secondary] uppercase mb-2">
-        Branches
-      </h3>
-      <div className="space-y-1">
+      <h3 className="text-xs font-semibold text-[--text-tertiary] mb-2">Branches</h3>
+      <div className="space-y-0.5">
         {branchList.map((branch, i) => {
           const isActive = branch.branchId === activeBranchId;
-          const colorClass = BRANCH_COLORS[i % BRANCH_COLORS.length];
+          const dotColor = BRANCH_DOTS[i % BRANCH_DOTS.length];
           const depth = getDepth(branch, branches);
 
           return (
@@ -55,32 +43,21 @@ export function BranchTree({ branches, activeBranchId, onSelectBranch }: BranchT
               key={branch.branchId}
               onClick={() => onSelectBranch(branch.branchId)}
               className={`
-                w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-xs
+                w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs
                 transition-colors cursor-pointer
-                ${isActive ? "bg-white/10 text-white" : "text-[--text-secondary] hover:bg-white/5"}
+                ${isActive ? "bg-[--bg-hover] text-[--text-primary]" : "text-[--text-secondary] hover:bg-[--bg-hover]"}
               `}
-              style={{ paddingLeft: `${8 + depth * 16}px` }}
+              style={{ paddingLeft: `${10 + depth * 14}px` }}
             >
-              {/* Branch indicator */}
-              <div className="flex items-center gap-1.5">
-                {depth > 0 && (
-                  <svg width="12" height="12" viewBox="0 0 12 12" className="opacity-30">
-                    <path d="M 2 0 L 2 6 L 10 6" stroke="currentColor" fill="none" strokeWidth="1.5" />
-                  </svg>
-                )}
-                <div className={`w-2 h-2 rounded-full ${colorClass} ${isActive ? "ring-2 ring-white/30" : ""}`} />
-              </div>
-
-              {/* Label */}
-              <span className="truncate">
-                {branch.label ?? branch.branchId}
-              </span>
-
-              {/* Status badge */}
+              {depth > 0 && (
+                <svg width="10" height="10" viewBox="0 0 10 10" className="text-[--text-tertiary] shrink-0">
+                  <path d="M 2 0 L 2 5 L 8 5" stroke="currentColor" fill="none" strokeWidth="1.2" />
+                </svg>
+              )}
+              <div className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+              <span className="truncate font-medium">{branch.label ?? branch.branchId}</span>
               {branch.status === "abandoned" && (
-                <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/10 text-red-400 ml-auto">
-                  abandoned
-                </span>
+                <span className="text-[10px] text-[--text-tertiary] ml-auto">abandoned</span>
               )}
             </button>
           );

@@ -12,38 +12,30 @@ export function CostDisplay({ spans }: CostDisplayProps) {
   if (stats.totalTokens === 0) return null;
 
   return (
-    <div className="flex items-center gap-3 text-[10px]">
-      {/* Cost */}
-      <div className="flex items-center gap-1.5 px-2 py-1 bg-[--bg-tertiary] rounded border border-[--border]">
-        <span className="text-[--text-secondary]">Cost:</span>
-        <span className={`font-bold ${getCostColor(stats.totalCost)}`}>
-          ${stats.totalCost < 0.01
-            ? stats.totalCost.toFixed(4)
-            : stats.totalCost.toFixed(2)}
+    <div className="flex items-center gap-2.5 text-xs">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[--bg-tertiary] rounded-lg">
+        <span className="text-[--text-tertiary]">Cost</span>
+        <span className={`font-medium font-mono ${getCostColor(stats.totalCost)}`}>
+          ${stats.totalCost < 0.01 ? stats.totalCost.toFixed(4) : stats.totalCost.toFixed(2)}
         </span>
       </div>
 
-      {/* Tokens */}
-      <div className="flex items-center gap-1.5 px-2 py-1 bg-[--bg-tertiary] rounded border border-[--border]">
-        <span className="text-[--text-secondary]">Tokens:</span>
-        <span className="font-mono text-[--text-primary]">
-          {formatTokens(stats.totalTokens)}
-        </span>
-        <span className="text-[--text-secondary]">
-          ({formatTokens(stats.inputTokens)}in / {formatTokens(stats.outputTokens)}out)
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[--bg-tertiary] rounded-lg">
+        <span className="text-[--text-tertiary]">Tokens</span>
+        <span className="font-mono text-[--text-secondary]">{formatTokens(stats.totalTokens)}</span>
+        <span className="text-[--text-tertiary]">
+          ({formatTokens(stats.inputTokens)} in, {formatTokens(stats.outputTokens)} out)
         </span>
       </div>
 
-      {/* Spans with cost */}
-      <div className="flex items-center gap-1.5 px-2 py-1 bg-[--bg-tertiary] rounded border border-[--border]">
-        <span className="text-[--text-secondary]">LLM calls:</span>
-        <span className="font-mono text-[--text-primary]">{stats.llmCalls}</span>
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[--bg-tertiary] rounded-lg">
+        <span className="text-[--text-tertiary]">LLM calls</span>
+        <span className="font-mono text-[--text-secondary]">{stats.llmCalls}</span>
       </div>
     </div>
   );
 }
 
-/** Compact inline cost badge for span cards */
 export function SpanCostBadge({ span }: { span: AgentSpan }) {
   const cost = (span.attributes["agent_lens.cost.total_usd"] as number) ?? 0;
   const tokens = (span.attributes["gen_ai.usage.total_tokens"] as number) ?? 0;
@@ -53,20 +45,19 @@ export function SpanCostBadge({ span }: { span: AgentSpan }) {
   return (
     <div className="flex items-center gap-1.5 mt-1">
       {cost > 0 && (
-        <span className={`text-[9px] font-mono ${getCostColor(cost)}`}>
+        <span className={`text-[11px] font-mono ${getCostColor(cost)}`}>
           ${cost < 0.001 ? cost.toFixed(5) : cost.toFixed(3)}
         </span>
       )}
       {tokens > 0 && (
-        <span className="text-[9px] font-mono text-[--text-secondary]">
-          {formatTokens(tokens)}tok
+        <span className="text-[11px] font-mono text-[--text-tertiary]">
+          {formatTokens(tokens)} tokens
         </span>
       )}
     </div>
   );
 }
 
-/** Running cost bar for the span detail view */
 export function CostBreakdown({ span }: { span: AgentSpan }) {
   const inputCost = (span.attributes["agent_lens.cost.input_usd"] as number) ?? 0;
   const outputCost = (span.attributes["agent_lens.cost.output_usd"] as number) ?? 0;
@@ -85,48 +76,42 @@ export function CostBreakdown({ span }: { span: AgentSpan }) {
 
   return (
     <div>
-      <h3 className="text-[10px] font-bold tracking-widest text-[--text-secondary] mb-2 uppercase">
-        Inference Economics
-      </h3>
+      <h3 className="text-xs font-semibold text-[--text-tertiary] mb-2">Cost</h3>
 
       {model && (
-        <div className="text-xs text-[--text-secondary] mb-2 font-mono">{model}</div>
+        <div className="text-xs text-[--text-tertiary] mb-2.5 font-mono">{model}</div>
       )}
 
       {/* Cost bar */}
-      <div className="h-3 rounded-full overflow-hidden flex bg-[--bg-primary] mb-2">
+      <div className="h-2 rounded-full overflow-hidden flex bg-[--bg-tertiary] mb-2.5">
         <div
-          className="bg-blue-500/60 transition-all"
+          className="bg-blue-500/50 transition-all rounded-l-full"
           style={{ width: `${inputPct}%` }}
-          title={`Input: $${inputCost.toFixed(4)}`}
         />
         <div
-          className="bg-purple-500/60 transition-all"
+          className="bg-violet-500/50 transition-all rounded-r-full"
           style={{ width: `${outputPct}%` }}
-          title={`Output: $${outputCost.toFixed(4)}`}
         />
       </div>
 
-      {/* Legend */}
-      <div className="grid grid-cols-2 gap-2 text-[10px]">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-blue-500/60" />
-          <span className="text-[--text-secondary]">Input</span>
-          <span className="font-mono ml-auto">{formatTokens(inputTokens)} tok</span>
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-blue-500/50" />
+          <span className="text-[--text-tertiary]">Input</span>
+          <span className="font-mono ml-auto text-[--text-secondary]">{formatTokens(inputTokens)}</span>
           <span className="font-mono text-blue-400">${inputCost.toFixed(4)}</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-purple-500/60" />
-          <span className="text-[--text-secondary]">Output</span>
-          <span className="font-mono ml-auto">{formatTokens(outputTokens)} tok</span>
-          <span className="font-mono text-purple-400">${outputCost.toFixed(4)}</span>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-violet-500/50" />
+          <span className="text-[--text-tertiary]">Output</span>
+          <span className="font-mono ml-auto text-[--text-secondary]">{formatTokens(outputTokens)}</span>
+          <span className="font-mono text-violet-400">${outputCost.toFixed(4)}</span>
         </div>
       </div>
 
-      {/* Total */}
-      <div className="mt-2 pt-2 border-t border-[--border] flex items-center justify-between">
-        <span className="text-[10px] text-[--text-secondary]">Total</span>
-        <span className={`text-sm font-bold font-mono ${getCostColor(totalCost)}`}>
+      <div className="mt-2.5 pt-2.5 border-t border-[--border] flex items-center justify-between">
+        <span className="text-xs text-[--text-tertiary]">Total</span>
+        <span className={`text-sm font-semibold font-mono ${getCostColor(totalCost)}`}>
           ${totalCost < 0.01 ? totalCost.toFixed(4) : totalCost.toFixed(2)}
         </span>
       </div>
@@ -163,18 +148,12 @@ function calculateStats(spans: Map<string, AgentSpan>): CostStats {
     }
   }
 
-  return {
-    totalCost,
-    inputTokens,
-    outputTokens,
-    totalTokens: inputTokens + outputTokens,
-    llmCalls,
-  };
+  return { totalCost, inputTokens, outputTokens, totalTokens: inputTokens + outputTokens, llmCalls };
 }
 
 function getCostColor(cost: number): string {
-  if (cost < 0.01) return "text-green-400";
-  if (cost < 0.10) return "text-yellow-400";
+  if (cost < 0.01) return "text-emerald-400";
+  if (cost < 0.10) return "text-amber-400";
   if (cost < 1.00) return "text-orange-400";
   return "text-red-400";
 }

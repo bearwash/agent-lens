@@ -4,10 +4,10 @@ import { useState } from "react";
 import type { ApprovalRequest, ApprovalDecision } from "@agent-lens/protocol";
 
 const RISK_STYLES: Record<string, string> = {
-  low: "text-green-400 bg-green-500/10 border-green-500/30",
-  medium: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
-  high: "text-orange-400 bg-orange-500/10 border-orange-500/30",
-  critical: "text-red-400 bg-red-500/10 border-red-500/30",
+  low: "text-emerald-400 bg-emerald-500/10",
+  medium: "text-amber-400 bg-amber-500/10",
+  high: "text-orange-400 bg-orange-500/10",
+  critical: "text-red-400 bg-red-500/10",
 };
 
 interface ApprovalPanelProps {
@@ -20,10 +20,10 @@ export function ApprovalPanel({ approvals, onDecision }: ApprovalPanelProps) {
 
   return (
     <div className="border-t border-[--border] bg-[--bg-secondary]">
-      <div className="px-4 py-2 border-b border-[--border] flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-        <span className="text-xs font-bold tracking-widest uppercase">
-          Pending Approvals ({approvals.length})
+      <div className="px-4 py-2.5 border-b border-[--border] flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+        <span className="text-xs font-semibold text-[--text-secondary]">
+          {approvals.length} pending {approvals.length === 1 ? "approval" : "approvals"}
         </span>
       </div>
       <div className="max-h-64 overflow-y-auto">
@@ -56,44 +56,44 @@ function ApprovalCard({
   };
 
   return (
-    <div className="p-3 border-b border-[--border] space-y-2">
+    <div className="p-3.5 border-b border-[--border] space-y-2.5">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-bold">{approval.toolName}</span>
-        <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${riskStyle}`}>
-          {approval.riskLevel.toUpperCase()}
+        <span className="text-sm font-medium">{approval.toolName}</span>
+        <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${riskStyle}`}>
+          {approval.riskLevel}
         </span>
       </div>
 
-      <div className="text-xs text-[--text-secondary]">
-        Server: {approval.mcpServer}
+      <div className="text-xs text-[--text-tertiary]">
+        {approval.mcpServer}
       </div>
 
       <div className="text-xs text-[--text-secondary]">{approval.reason}</div>
 
-      <pre className="text-[10px] bg-[--bg-primary] p-2 rounded overflow-x-auto">
+      <pre className="text-[11px] font-mono bg-[--bg-tertiary] p-2.5 rounded-lg overflow-x-auto text-[--text-secondary]">
         {JSON.stringify(approval.arguments, null, 2)}
       </pre>
 
       <input
         type="text"
-        placeholder="Note (optional)..."
+        placeholder="Add a note..."
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        className="w-full px-2 py-1 text-xs bg-[--bg-primary] border border-[--border] rounded focus:outline-none focus:border-blue-500"
+        className="w-full px-3 py-1.5 text-xs bg-[--bg-tertiary] border border-[--border] rounded-lg focus:outline-none focus:border-[--accent-blue] placeholder:text-[--text-tertiary]"
       />
 
       <div className="flex gap-2">
         <button
           onClick={() => decide("approved")}
-          className="flex-1 px-3 py-1.5 text-xs font-bold rounded bg-green-500/20 border border-green-500/30 text-green-300 hover:bg-green-500/30 transition-colors cursor-pointer"
+          className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors cursor-pointer"
         >
-          APPROVE
+          Approve
         </button>
         <button
           onClick={() => decide("rejected")}
-          className="flex-1 px-3 py-1.5 text-xs font-bold rounded bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 transition-colors cursor-pointer"
+          className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer"
         >
-          REJECT
+          Reject
         </button>
       </div>
     </div>

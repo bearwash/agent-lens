@@ -71,9 +71,9 @@ async function main() {
 
   // 2. Start dashboard
   console.log("[Recorder] Starting dashboard...");
-  spawnBg("node", [join(ROOT, "node_modules/.bin/next"), "start", "--port", String(DASHBOARD_PORT)], {
+  spawnBg("npx", ["next", "start", "--port", String(DASHBOARD_PORT)], {
     cwd: join(ROOT, "apps/dashboard"),
-    shell: false,
+    shell: true,
   });
 
   // Wait for services

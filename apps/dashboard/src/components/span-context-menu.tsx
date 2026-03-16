@@ -24,9 +24,7 @@ export function SpanContextMenu({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
     };
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -47,60 +45,40 @@ export function SpanContextMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 bg-[--bg-tertiary] border border-[--border] rounded-lg shadow-2xl shadow-black/50 min-w-[200px] py-1"
+      className="fixed z-50 bg-[--bg-secondary] border border-[--border] rounded-xl shadow-xl shadow-black/30 min-w-[220px] py-1 overflow-hidden"
       style={{ left: position.x, top: position.y }}
     >
       {!showForkInput ? (
         <>
-          <MenuHeader spanId={span.spanId} name={span.name} />
+          <div className="px-3 py-2 border-b border-[--border]">
+            <div className="text-xs font-medium truncate">{span.name}</div>
+            <div className="text-[11px] text-[--text-tertiary] font-mono mt-0.5">{span.spanId.slice(0, 12)}</div>
+          </div>
 
-          <div className="border-t border-[--border] my-1" />
+          <div className="py-1">
+            <MenuItem
+              label="Fork here"
+              hint="Create a new branch"
+              onClick={() => setShowForkInput(true)}
+            />
+            <MenuItem
+              label="Rewind to this step"
+              hint="Reset agent state"
+              onClick={() => { onRewind(span.spanId); onClose(); }}
+            />
 
-          <MenuItem
-            icon={
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M 3 2 L 3 8 M 3 8 C 3 10 5 10 7 8 M 11 2 L 11 12" />
-                <circle cx="3" cy="2" r="1.5" fill="currentColor" />
-                <circle cx="11" cy="2" r="1.5" fill="currentColor" />
-                <circle cx="11" cy="12" r="1.5" fill="currentColor" />
-              </svg>
-            }
-            label="Fork Here"
-            description="Create a new branch from this point"
-            onClick={() => setShowForkInput(true)}
-            color="text-pink-400"
-          />
+            <div className="border-t border-[--border] my-1" />
 
-          <MenuItem
-            icon={
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M 2 7 L 5 4 M 2 7 L 5 10 M 2 7 L 12 7" />
-              </svg>
-            }
-            label="Rewind To"
-            description="Reset agent state to this step"
-            onClick={() => { onRewind(span.spanId); onClose(); }}
-            color="text-yellow-400"
-          />
-
-          <div className="border-t border-[--border] my-1" />
-
-          <MenuItem
-            icon={
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="2" y="2" width="10" height="10" rx="2" />
-                <path d="M 5 7 L 9 7" />
-              </svg>
-            }
-            label="Copy Span ID"
-            description={span.spanId.slice(0, 12) + "..."}
-            onClick={() => { navigator.clipboard.writeText(span.spanId); onClose(); }}
-            color="text-[--text-secondary]"
-          />
+            <MenuItem
+              label="Copy span ID"
+              hint={span.spanId.slice(0, 12)}
+              onClick={() => { navigator.clipboard.writeText(span.spanId); onClose(); }}
+            />
+          </div>
         </>
       ) : (
-        <div className="p-3 space-y-2">
-          <div className="text-xs font-bold text-pink-400">Create Branch</div>
+        <div className="p-3 space-y-2.5">
+          <div className="text-xs font-semibold">Create branch</div>
           <input
             autoFocus
             type="text"
@@ -108,20 +86,20 @@ export function SpanContextMenu({
             value={forkLabel}
             onChange={(e) => setForkLabel(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleForkSubmit(); }}
-            className="w-full px-2 py-1.5 text-xs bg-[--bg-primary] border border-[--border] rounded focus:outline-none focus:border-pink-400"
+            className="w-full px-3 py-1.5 text-xs bg-[--bg-tertiary] border border-[--border] rounded-lg focus:outline-none focus:border-[--accent-blue] placeholder:text-[--text-tertiary]"
           />
           <div className="flex gap-2">
             <button
               onClick={() => setShowForkInput(false)}
-              className="flex-1 px-2 py-1 text-[10px] rounded border border-[--border] text-[--text-secondary] hover:bg-white/5 cursor-pointer"
+              className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-[--border] text-[--text-secondary] hover:bg-[--bg-hover] cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleForkSubmit}
-              className="flex-1 px-2 py-1 text-[10px] rounded bg-pink-500/20 border border-pink-500/30 text-pink-300 hover:bg-pink-500/30 font-bold cursor-pointer"
+              className="flex-1 px-2 py-1.5 text-xs rounded-lg bg-[--accent-blue] text-white font-medium hover:opacity-90 cursor-pointer"
             >
-              Fork
+              Create
             </button>
           </div>
         </div>
@@ -130,38 +108,22 @@ export function SpanContextMenu({
   );
 }
 
-function MenuHeader({ spanId, name }: { spanId: string; name: string }) {
-  return (
-    <div className="px-3 py-1.5">
-      <div className="text-xs font-medium truncate">{name}</div>
-      <div className="text-[10px] text-[--text-secondary] font-mono">{spanId.slice(0, 12)}</div>
-    </div>
-  );
-}
-
 function MenuItem({
-  icon,
   label,
-  description,
+  hint,
   onClick,
-  color,
 }: {
-  icon: React.ReactNode;
   label: string;
-  description: string;
+  hint: string;
   onClick: () => void;
-  color: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-white/5 transition-colors cursor-pointer"
+      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[--bg-hover] transition-colors cursor-pointer"
     >
-      <div className={color}>{icon}</div>
-      <div className="flex-1 min-w-0">
-        <div className={`text-xs font-medium ${color}`}>{label}</div>
-        <div className="text-[10px] text-[--text-secondary] truncate">{description}</div>
-      </div>
+      <span className="text-xs font-medium">{label}</span>
+      <span className="text-[11px] text-[--text-tertiary]">{hint}</span>
     </button>
   );
 }

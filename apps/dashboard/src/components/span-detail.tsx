@@ -11,8 +11,9 @@ interface SpanDetailProps {
 export function SpanDetail({ span }: SpanDetailProps) {
   if (!span) {
     return (
-      <div className="flex items-center justify-center h-full text-[--text-secondary]">
-        Select a span to inspect
+      <div className="flex flex-col items-center justify-center h-full text-[--text-secondary] gap-2">
+        <span className="text-sm">Select a span to inspect</span>
+        <span className="text-xs text-[--text-tertiary]">Click any item in the timeline, or right-click for options</span>
       </div>
     );
   }
@@ -39,54 +40,62 @@ export function SpanDetail({ span }: SpanDetailProps) {
   }
 
   return (
-    <div className="p-4 space-y-4 overflow-y-auto h-full">
+    <div className="p-5 space-y-5 overflow-y-auto h-full">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-bold">{span.name}</h2>
-        <div className="flex gap-3 mt-1 text-xs text-[--text-secondary]">
-          <span>ID: {span.spanId.slice(0, 8)}</span>
-          <span>Trace: {span.traceId.slice(0, 8)}</span>
-          {span.parentSpanId && <span>Parent: {span.parentSpanId.slice(0, 8)}</span>}
+        <h2 className="text-base font-semibold">{span.name}</h2>
+        <div className="flex gap-3 mt-1.5 text-xs text-[--text-tertiary] font-mono">
+          <span>{span.spanId.slice(0, 8)}</span>
+          <span>&middot;</span>
+          <span>trace {span.traceId.slice(0, 8)}</span>
+          {span.parentSpanId && (
+            <>
+              <span>&middot;</span>
+              <span>parent {span.parentSpanId.slice(0, 8)}</span>
+            </>
+          )}
         </div>
       </div>
 
       {/* Timing */}
       <Section title="Timing">
-        <KV label="Start" value={new Date(span.startTime).toISOString()} />
-        {span.endTime != null && <KV label="End" value={new Date(span.endTime).toISOString()} />}
-        {span.endTime != null && (
-          <KV label="Duration" value={`${span.endTime - span.startTime}ms`} />
-        )}
-        <KV label="Status" value={span.status} />
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+          <KV label="Started" value={new Date(span.startTime).toLocaleTimeString()} />
+          {span.endTime != null && <KV label="Ended" value={new Date(span.endTime).toLocaleTimeString()} />}
+          {span.endTime != null && (
+            <KV label="Duration" value={`${span.endTime - span.startTime}ms`} />
+          )}
+          <KV label="Status" value={span.status} />
+        </div>
       </Section>
 
-      {/* Reasoning (Chain of Thought) */}
+      {/* Chain of Thought */}
       {reasoning.length > 0 ? (
-        <Section title="Chain of Thought">
-          <pre className="text-xs bg-[--bg-primary] p-3 rounded-lg overflow-x-auto whitespace-pre-wrap break-words">
+        <Section title="Reasoning">
+          <div className="text-[13px] bg-[--bg-tertiary] p-3.5 rounded-lg leading-relaxed whitespace-pre-wrap break-words text-[--text-primary]">
             {reasoning}
-          </pre>
+          </div>
         </Section>
       ) : null}
 
-      {/* MCP Tool Arguments */}
+      {/* Tool Arguments */}
       {parsedArgsStr.length > 0 ? (
-        <Section title="Tool Arguments">
-          <pre className="text-xs bg-[--bg-primary] p-3 rounded-lg overflow-x-auto">
+        <Section title="Arguments">
+          <pre className="text-xs font-mono bg-[--bg-tertiary] p-3.5 rounded-lg overflow-x-auto text-[--text-secondary]">
             {parsedArgsStr}
           </pre>
         </Section>
       ) : null}
 
-      {/* Inference Economics */}
+      {/* Cost */}
       <CostBreakdown span={span} />
 
-      {/* Multimodal Attachments */}
+      {/* Attachments */}
       {attachments.length > 0 ? (
         <AttachmentViewer attachments={attachments} />
       ) : null}
 
-      {/* OTel Attributes */}
+      {/* Attributes */}
       <Section title="Attributes">
         <div className="space-y-1">
           {Object.entries(span.attributes as Record<string, unknown>)
@@ -100,17 +109,17 @@ export function SpanDetail({ span }: SpanDetailProps) {
       {/* Events */}
       {span.events.length > 0 && (
         <Section title="Events">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {span.events.map((event, i) => (
-              <div key={i} className="text-xs bg-[--bg-primary] p-2 rounded">
+              <div key={i} className="text-xs bg-[--bg-tertiary] p-2.5 rounded-lg">
                 <div className="flex justify-between">
-                  <span className="font-medium">{event.name}</span>
-                  <span className="text-[--text-secondary]">
+                  <span className="font-medium text-[--text-primary]">{event.name}</span>
+                  <span className="text-[--text-tertiary] tabular-nums">
                     {new Date(event.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
                 {event.attributes && (
-                  <pre className="mt-1 text-[10px] opacity-60">
+                  <pre className="mt-1.5 text-[11px] font-mono text-[--text-tertiary]">
                     {JSON.stringify(event.attributes, null, 2)}
                   </pre>
                 )}
@@ -126,9 +135,7 @@ export function SpanDetail({ span }: SpanDetailProps) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-xs font-bold tracking-widest text-[--text-secondary] mb-2 uppercase">
-        {title}
-      </h3>
+      <h3 className="text-xs font-semibold text-[--text-tertiary] mb-2">{title}</h3>
       {children}
     </div>
   );
@@ -137,8 +144,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function KV({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2 text-xs">
-      <span className="text-[--text-secondary] shrink-0">{label}:</span>
-      <span className="truncate font-mono">{value}</span>
+      <span className="text-[--text-tertiary] shrink-0">{label}</span>
+      <span className="truncate font-mono text-[--text-secondary]">{value}</span>
     </div>
   );
 }

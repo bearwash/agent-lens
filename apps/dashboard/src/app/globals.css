@@ -1,42 +1,48 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a2e;
-  --border: #2a2a3e;
-  --text-primary: #e4e4ef;
-  --text-secondary: #8888a0;
-  --accent-blue: #4f8ff7;
-  --accent-green: #34d399;
-  --accent-red: #f87171;
-  --accent-yellow: #fbbf24;
-  --accent-purple: #a78bfa;
-  --span-thinking: #a78bfa;
-  --span-tool-call: #4f8ff7;
-  --span-tool-result: #34d399;
-  --span-error: #f87171;
-  --span-paused: #fbbf24;
-  --span-branch: #f472b6;
+  --bg-primary: #111113;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #1f1f23;
+  --bg-hover: #26262b;
+  --border: #27272a;
+  --border-subtle: #1f1f23;
+  --text-primary: #ececef;
+  --text-secondary: #9b9ba4;
+  --text-tertiary: #63636e;
+  --accent-blue: #3b82f6;
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --accent-yellow: #eab308;
+  --accent-purple: #8b5cf6;
+  --accent-pink: #ec4899;
+  --accent-cyan: #06b6d4;
 }
 
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+code, pre, .font-mono {
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
-/* Glow animation for active spans */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 4px var(--accent-blue); }
-  50% { box-shadow: 0 0 16px var(--accent-blue); }
+/* Subtle pulse for active items */
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .span-active {
-  animation: pulse-glow 2s ease-in-out infinite;
+  animation: subtle-pulse 2s ease-in-out infinite;
 }
