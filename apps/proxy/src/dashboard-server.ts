@@ -5,7 +5,7 @@
 import { WebSocketServer, type WebSocket } from "ws";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
-import type { DashboardEvent, ApprovalDecision, Branch, ThreatIndicator } from "@agent-lens/protocol";
+import type { DashboardEvent, ApprovalDecision, Branch, ThreatIndicator, AgentSpan } from "@agent-lens/protocol";
 import { createBranchSpan, createTraceId } from "@agent-lens/otel-config";
 import type { Store } from "@agent-lens/store";
 import type { AuditTrail } from "@agent-lens/store";
@@ -49,6 +49,33 @@ export class DashboardServer {
         this.store.listSessions().then((sessions) => {
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify(sessions));
+        });
+        return;
+      }
+
+      // Return all spans across all traces
+      if (req.url === "/api/spans" && req.method === "GET") {
+        this.store.listSessions().then(async (sessions) => {
+          const allSpans: AgentSpan[] = [];
+          for (const session of sessions) {
+            const traceId = (session.metadata as Record<string, unknown> | undefined)?.traceId as string | undefined;
+            if (traceId) {
+              const spans = await this.store.getSpansByTrace(traceId);
+              allSpans.push(...spans);
+            }
+            // Also try sessionId as traceId (demo uses separate values)
+            const spans = await this.store.getSpansByTrace(session.sessionId);
+            allSpans.push(...spans);
+          }
+          // Deduplicate by spanId
+          const seen = new Set<string>();
+          const unique = allSpans.filter((s) => {
+            if (seen.has(s.spanId)) return false;
+            seen.add(s.spanId);
+            return true;
+          });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(unique));
         });
         return;
       }

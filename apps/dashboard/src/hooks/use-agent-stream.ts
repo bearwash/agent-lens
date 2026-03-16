@@ -11,6 +11,10 @@ import type {
 
 const DEFAULT_WS_URL = "ws://localhost:18790";
 
+function getHttpUrl(wsUrl: string): string {
+  return wsUrl.replace(/^ws:/, "http:").replace(/^wss:/, "https:");
+}
+
 export interface AgentState {
   connected: boolean;
   sessions: AgentSession[];
@@ -31,14 +35,47 @@ export function useAgentStream(wsUrl: string = DEFAULT_WS_URL) {
     spanTimeline: [],
   });
 
-  const submitApproval = useCallback(
-    (decision: DashboardEvent & { type: "approval:decision" }) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify(decision));
-      }
-    },
-    [],
-  );
+  // Fetch existing data from REST API
+  const fetchInitialState = useCallback(async () => {
+    const httpUrl = getHttpUrl(wsUrl);
+    try {
+      // Fetch sessions
+      const sessionsRes = await fetch(`${httpUrl}/api/sessions`);
+      if (!sessionsRes.ok) return;
+      const sessions: AgentSession[] = await sessionsRes.json();
+
+      // Fetch all spans
+      const spans = new Map<string, AgentSpan>();
+      try {
+        const spansRes = await fetch(`${httpUrl}/api/spans`);
+        if (spansRes.ok) {
+          const allSpans: AgentSpan[] = await spansRes.json();
+          for (const span of allSpans) {
+            spans.set(span.spanId, span);
+          }
+        }
+      } catch { /* skip */ }
+
+      // Fetch pending approvals
+      let pendingApprovals: ApprovalRequest[] = [];
+      try {
+        const appRes = await fetch(`${httpUrl}/api/approvals/pending`);
+        if (appRes.ok) pendingApprovals = await appRes.json();
+      } catch { /* skip */ }
+
+      const spanTimeline = [...spans.values()].sort((a, b) => a.startTime - b.startTime);
+
+      setState((prev) => ({
+        ...prev,
+        sessions,
+        spans,
+        spanTimeline,
+        pendingApprovals,
+      }));
+    } catch {
+      // API not available yet — will get data via WebSocket
+    }
+  }, [wsUrl]);
 
   useEffect(() => {
     let reconnectTimer: ReturnType<typeof setTimeout>;
@@ -51,27 +88,24 @@ export function useAgentStream(wsUrl: string = DEFAULT_WS_URL) {
       ws.onopen = () => {
         retryCount = 0;
         setState((s) => ({ ...s, connected: true }));
+        // Fetch any existing data that was recorded before we connected
+        fetchInitialState();
       };
 
       ws.onclose = () => {
         setState((s) => ({ ...s, connected: false }));
-        // Exponential backoff: 1s, 2s, 4s, max 10s
         const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
         retryCount++;
         reconnectTimer = setTimeout(connect, delay);
       };
 
-      ws.onerror = () => {
-        // Silently handled by onclose — no console spam
-      };
+      ws.onerror = () => {};
 
       ws.onmessage = (event) => {
         try {
           const dashEvent = JSON.parse(event.data) as DashboardEvent;
           setState((prev) => applyEvent(prev, dashEvent));
-        } catch {
-          // Ignore malformed messages
-        }
+        } catch { /* ignore */ }
       };
     }
 
@@ -81,7 +115,16 @@ export function useAgentStream(wsUrl: string = DEFAULT_WS_URL) {
       clearTimeout(reconnectTimer);
       wsRef.current?.close();
     };
-  }, [wsUrl]);
+  }, [wsUrl, fetchInitialState]);
+
+  const submitApproval = useCallback(
+    (decision: DashboardEvent & { type: "approval:decision" }) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify(decision));
+      }
+    },
+    [],
+  );
 
   const sendMessage = useCallback(
     (msg: Record<string, unknown>) => {
@@ -103,9 +146,7 @@ function applyEvent(state: AgentState, event: DashboardEvent): AgentState {
       const spans = new Map(state.spans);
       spans.set(event.span.spanId, event.span);
       next.spans = spans;
-      next.spanTimeline = [...spans.values()].sort(
-        (a, b) => a.startTime - b.startTime,
-      );
+      next.spanTimeline = [...spans.values()].sort((a, b) => a.startTime - b.startTime);
       break;
     }
 
@@ -115,9 +156,7 @@ function applyEvent(state: AgentState, event: DashboardEvent): AgentState {
       if (existing) {
         spans.set(event.spanId, { ...existing, ...event.updates });
         next.spans = spans;
-        next.spanTimeline = [...spans.values()].sort(
-          (a, b) => a.startTime - b.startTime,
-        );
+        next.spanTimeline = [...spans.values()].sort((a, b) => a.startTime - b.startTime);
       }
       break;
     }
@@ -126,15 +165,9 @@ function applyEvent(state: AgentState, event: DashboardEvent): AgentState {
       const spans = new Map(state.spans);
       const existing = spans.get(event.spanId);
       if (existing) {
-        spans.set(event.spanId, {
-          ...existing,
-          endTime: event.endTime,
-          status: event.status,
-        });
+        spans.set(event.spanId, { ...existing, endTime: event.endTime, status: event.status });
         next.spans = spans;
-        next.spanTimeline = [...spans.values()].sort(
-          (a, b) => a.startTime - b.startTime,
-        );
+        next.spanTimeline = [...spans.values()].sort((a, b) => a.startTime - b.startTime);
       }
       break;
     }
@@ -143,12 +176,11 @@ function applyEvent(state: AgentState, event: DashboardEvent): AgentState {
       next.sessions = [...state.sessions, event.session];
       break;
 
-    case "session:update": {
+    case "session:update":
       next.sessions = state.sessions.map((s) =>
         s.sessionId === event.sessionId ? { ...s, ...event.updates } : s,
       );
       break;
-    }
 
     case "branch:create": {
       const branches = new Map(state.branches);

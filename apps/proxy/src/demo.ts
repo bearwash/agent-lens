@@ -116,6 +116,7 @@ export async function runDemoScenario(emit: EmitFn): Promise<void> {
     metadata: {
       task: "Find and fix the broken API endpoint in the user service",
       model: "claude-opus-4-6",
+      traceId,
     },
   };
   emit({ type: "session:start", session });
