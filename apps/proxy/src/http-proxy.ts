@@ -169,9 +169,27 @@ export class StreamableHttpProxy {
       });
       res.end(responseBody);
     } catch (err) {
-      console.error("[HTTP Proxy] Error:", err);
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Internal proxy error" }));
+      // Complete the span as error if it was created
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error("[HTTP Proxy] Error:", errMsg);
+
+      // Try to find and complete the pending span
+      try {
+        const sessions = await this.store.listSessions();
+        // Mark any pending spans as error
+        for (const session of sessions) {
+          const spans = await this.store.getSpansByTrace(this.traceId);
+          for (const span of spans) {
+            if (span.status === "pending") {
+              await this.store.updateSpan(span.spanId, { endTime: Date.now(), status: "error" });
+              this.eventBus.emit({ type: "span:end", spanId: span.spanId, endTime: Date.now(), status: "error" });
+            }
+          }
+        }
+      } catch { /* best effort */ }
+
+      res.writeHead(502, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: `Proxy error: ${errMsg}` }));
     }
   }
 
