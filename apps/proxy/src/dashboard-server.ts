@@ -105,6 +105,43 @@ export class DashboardServer {
         return;
       }
 
+      // ─── Ingest API: POST spans/sessions from any agent ───
+
+      if (req.url === "/api/ingest/session" && req.method === "POST") {
+        this.readBody(req).then((body) => {
+          try {
+            const session = JSON.parse(body) as import("@agent-lens/protocol").AgentSession;
+            this.store.createSession(session).catch(() => {});
+            this.eventBus.emit({ type: "session:start", session });
+            res.writeHead(201, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true }));
+          } catch {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Invalid session JSON" }));
+          }
+        });
+        return;
+      }
+
+      if (req.url === "/api/ingest/span" && req.method === "POST") {
+        this.readBody(req).then((body) => {
+          try {
+            const span = JSON.parse(body) as AgentSpan;
+            this.store.appendSpan(span).catch(() => {});
+            this.eventBus.emit({ type: "span:start", span });
+            if (span.endTime) {
+              this.eventBus.emit({ type: "span:end", spanId: span.spanId, endTime: span.endTime, status: span.status });
+            }
+            res.writeHead(201, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true }));
+          } catch {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Invalid span JSON" }));
+          }
+        });
+        return;
+      }
+
       // ─── Branch Management Endpoints ───
 
       if (req.url?.startsWith("/api/branches/") && req.method === "GET") {
@@ -371,8 +408,40 @@ export class DashboardServer {
         break;
       }
 
+      // ─── Agent Ingest: accept spans/sessions from external agents ───
+      case "ingest:session": {
+        const session = (msg as unknown as { type: string; session: import("@agent-lens/protocol").AgentSession }).session;
+        if (session?.sessionId) {
+          this.store.createSession(session).catch(() => {});
+          this.eventBus.emit({ type: "session:start", session });
+          console.log(`[Ingest] Session: ${session.sessionId}`);
+        }
+        break;
+      }
+
+      case "ingest:span": {
+        const span = (msg as unknown as { type: string; span: import("@agent-lens/protocol").AgentSpan }).span;
+        if (span?.spanId) {
+          this.store.appendSpan(span).catch(() => {});
+          this.eventBus.emit({ type: "span:start", span });
+          if (span.endTime) {
+            this.eventBus.emit({ type: "span:end", spanId: span.spanId, endTime: span.endTime, status: span.status });
+          }
+          console.log(`[Ingest] Span: ${span.name}`);
+        }
+        break;
+      }
+
+      case "ingest:span_end": {
+        const { spanId, endTime, status } = msg as unknown as { type: string; spanId: string; endTime: number; status: import("@agent-lens/protocol").SpanStatus };
+        if (spanId) {
+          this.store.updateSpan(spanId, { endTime, status }).catch(() => {});
+          this.eventBus.emit({ type: "span:end", spanId, endTime, status });
+        }
+        break;
+      }
+
       default:
-        console.warn(`[Dashboard] Unknown message type: ${msg.type}`);
     }
   }
 
