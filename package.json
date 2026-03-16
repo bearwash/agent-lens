@@ -10,6 +10,7 @@
     "demo": "concurrently -n proxy,dashboard -c blue,green \"pnpm --filter @agent-lens/proxy run demo\" \"pnpm --filter @agent-lens/dashboard run dev\"",
     "dev:proxy": "pnpm --filter @agent-lens/proxy run dev",
     "dev:dashboard": "pnpm --filter @agent-lens/dashboard run dev",
+    "test:ingest": "node scripts/test-ingest.mjs",
     "build": "pnpm -r run build",
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck"
@@ -26,6 +27,7 @@
     "gifencoder": "^2.0.1",
     "png-js": "^1.0.0",
     "puppeteer": "^24.39.1",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "ws": "^8.19.0"
   }
 }

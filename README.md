@@ -108,46 +108,138 @@ Agent Lens does all of this, **100% local**, with **zero cloud dependency**.
 ## Quick Start
 
 ```bash
-# Clone & install
 git clone https://github.com/bearwash/agent-lens.git
 cd agent-lens
 pnpm install
-
-# Start everything
-pnpm dev
+pnpm build
 ```
 
-| Service | URL |
-|---------|-----|
-| Dashboard | [http://localhost:3000](http://localhost:3000) |
-| Proxy WebSocket | `ws://localhost:18790` |
-| HTTP Proxy | `http://localhost:18791` |
-| REST API | `http://localhost:18790/api/*` |
+### 1. Demo Mode (try it instantly)
 
-### Docker (with PostgreSQL)
+```bash
+pnpm demo
+# Open http://localhost:3000
+# A simulated 17-step agent session plays automatically
+```
+
+### 2. Real Agent Mode
+
+```bash
+pnpm dev
+# Open http://localhost:3000
+```
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| Dashboard | http://localhost:3000 | Real-time visualization UI |
+| Proxy WS | ws://localhost:18790 | WebSocket for dashboard + ingest |
+| HTTP Proxy | http://localhost:18791 | MCP Streamable HTTP proxy |
+| REST API | http://localhost:18790/api/* | Sessions, spans, firewall, audit |
+
+### Connect any agent
+
+**Option A: REST API (simplest)**
+
+Send spans from any language/tool via HTTP:
+
+```bash
+# 1. Create a session
+curl -X POST http://localhost:18790/api/ingest/session \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId":"my-session","agentSystem":"my-agent","startedAt":'$(date +%s000)',"status":"running","rootBranchId":"main","activeBranchId":"main","metadata":{"traceId":"trace-001"}}'
+
+# 2. Send spans (they appear in the dashboard immediately)
+curl -X POST http://localhost:18790/api/ingest/span \
+  -H "Content-Type: application/json" \
+  -d '{"traceId":"trace-001","spanId":"span-001","name":"read_file: index.ts","kind":"tool_call","startTime":'$(date +%s000)',"endTime":'$(($(date +%s000)+500))',"status":"ok","attributes":{"gen_ai.system":"claude","agent_lens.mcp.tool":"read_file"},"events":[]}'
+```
+
+**Option B: WebSocket (real-time streaming)**
+
+```javascript
+const ws = new WebSocket("ws://localhost:18790");
+ws.onopen = () => {
+  // Register session
+  ws.send(JSON.stringify({ type: "ingest:session", session: { sessionId: "s1", agentSystem: "my-agent", startedAt: Date.now(), status: "running", rootBranchId: "main", activeBranchId: "main" } }));
+  // Send span
+  ws.send(JSON.stringify({ type: "ingest:span", span: { traceId: "t1", spanId: "sp1", name: "thinking", kind: "thinking", startTime: Date.now(), status: "ok", attributes: { "agent_lens.reasoning": "Analyzing the code..." }, events: [] } }));
+};
+```
+
+**Option C: MCP stdio proxy (wrap an MCP server)**
+
+```bash
+# Agent Lens intercepts all traffic between agent and MCP server
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  | node apps/proxy/dist/index.js npx @modelcontextprotocol/server-filesystem /tmp
+```
+
+**Option D: MCP HTTP proxy (transparent)**
+
+```bash
+# Point your agent at localhost:18791, set X-MCP-Target header
+curl -X POST http://localhost:18791 \
+  -H "Content-Type: application/json" \
+  -H "X-MCP-Target: https://your-mcp-server.com" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+### Test it works
+
+```bash
+# With proxy running in another terminal:
+pnpm test:ingest
+# → Sends 6 sample spans, visible at http://localhost:3000
+```
+
+### Docker (PostgreSQL + persistent storage)
 
 ```bash
 cd docker && docker compose up
 ```
 
-Starts PostgreSQL 17 (WORM storage) + proxy + dashboard. Your agent's reasoning history is persisted and tamper-proof.
+---
 
-### Connect Your Agent
+## 使い方（日本語）
 
-**stdio mode** — wrap any MCP server:
 ```bash
-# Agent Lens sits between your agent and the MCP server
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"read_file"}}' \
-  | node apps/proxy/dist/index.js npx @your/mcp-server
+git clone https://github.com/bearwash/agent-lens.git
+cd agent-lens
+pnpm install && pnpm build
 ```
 
-**Streamable HTTP mode** — transparent proxy:
+### デモモード（すぐ試せる）
+
 ```bash
-# Point your agent at Agent Lens, set X-MCP-Target to the real server
-curl -X POST http://localhost:18791 \
+pnpm demo
+# → http://localhost:3000 を開く（17ステップのデモが自動再生）
+```
+
+### 実際のエージェントと接続
+
+```bash
+pnpm dev
+# → http://localhost:3000 を開く
+```
+
+スパンの送信方法:
+
+```bash
+# セッションを作成
+curl -X POST http://localhost:18790/api/ingest/session \
   -H "Content-Type: application/json" \
-  -H "X-MCP-Target: https://your-mcp-server.com" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+  -d '{"sessionId":"s1","agentSystem":"my-agent","startedAt":1700000000000,"status":"running","rootBranchId":"main","activeBranchId":"main","metadata":{"traceId":"t1"}}'
+
+# スパンを送信（ダッシュボードにすぐ表示される）
+curl -X POST http://localhost:18790/api/ingest/span \
+  -H "Content-Type: application/json" \
+  -d '{"traceId":"t1","spanId":"sp1","name":"ファイル読み取り","kind":"tool_call","startTime":1700000000000,"endTime":1700000001000,"status":"ok","attributes":{"agent_lens.mcp.tool":"read_file"},"events":[]}'
+```
+
+動作確認:
+```bash
+pnpm test:ingest
+# → 6つのテストスパンが送信され、ダッシュボードに表示される
 ```
 
 ---
