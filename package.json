@@ -5,7 +5,9 @@
   "description": "Time-travel debugger for AI agents — visualize, intercept, and branch agent reasoning in real-time",
   "license": "MIT",
   "scripts": {
-    "dev": "pnpm --parallel -r run dev",
+    "start": "concurrently -n proxy,dashboard -c blue,green \"pnpm --filter @agent-lens/proxy run demo\" \"pnpm --filter @agent-lens/dashboard run dev\"",
+    "dev": "concurrently -n proxy,dashboard -c blue,green \"pnpm --filter @agent-lens/proxy run dev\" \"pnpm --filter @agent-lens/dashboard run dev\"",
+    "demo": "concurrently -n proxy,dashboard -c blue,green \"pnpm --filter @agent-lens/proxy run demo\" \"pnpm --filter @agent-lens/dashboard run dev\"",
     "dev:proxy": "pnpm --filter @agent-lens/proxy run dev",
     "dev:dashboard": "pnpm --filter @agent-lens/dashboard run dev",
     "build": "pnpm -r run build",
@@ -17,6 +19,13 @@
     "pnpm": ">=9.0.0"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0"
+    "@types/node": "^25.5.0",
+    "concurrently": "^9.2.1",
+    "ffmpeg-static": "^5.3.0",
+    "gif-encoder-2": "^1.0.5",
+    "gifencoder": "^2.0.1",
+    "png-js": "^1.0.0",
+    "puppeteer": "^24.39.1",
+    "sharp": "^0.34.5"
   }
 }

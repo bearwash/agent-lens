@@ -42,32 +42,35 @@ export function useAgentStream(wsUrl: string = DEFAULT_WS_URL) {
 
   useEffect(() => {
     let reconnectTimer: ReturnType<typeof setTimeout>;
+    let retryCount = 0;
 
     function connect() {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
+        retryCount = 0;
         setState((s) => ({ ...s, connected: true }));
-        console.log("[AgentStream] Connected");
       };
 
       ws.onclose = () => {
         setState((s) => ({ ...s, connected: false }));
-        console.log("[AgentStream] Disconnected, reconnecting...");
-        reconnectTimer = setTimeout(connect, 2000);
+        // Exponential backoff: 1s, 2s, 4s, max 10s
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+        retryCount++;
+        reconnectTimer = setTimeout(connect, delay);
       };
 
-      ws.onerror = (err) => {
-        console.error("[AgentStream] Error:", err);
+      ws.onerror = () => {
+        // Silently handled by onclose — no console spam
       };
 
       ws.onmessage = (event) => {
         try {
           const dashEvent = JSON.parse(event.data) as DashboardEvent;
           setState((prev) => applyEvent(prev, dashEvent));
-        } catch (err) {
-          console.error("[AgentStream] Parse error:", err);
+        } catch {
+          // Ignore malformed messages
         }
       };
     }
