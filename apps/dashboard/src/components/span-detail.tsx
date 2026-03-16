@@ -1,19 +1,21 @@
 "use client";
 
 import type { AgentSpan, Attachment } from "@agent-lens/protocol";
+import type { TranslationKey } from "@/lib/i18n";
 import { CostBreakdown } from "./cost-display";
 import { AttachmentViewer } from "./attachment-viewer";
 
 interface SpanDetailProps {
   span: AgentSpan | null;
+  t: (key: TranslationKey) => string;
 }
 
-export function SpanDetail({ span }: SpanDetailProps) {
+export function SpanDetail({ span, t }: SpanDetailProps) {
   if (!span) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-[--text-secondary] gap-2">
-        <span className="text-sm">Select a span to inspect</span>
-        <span className="text-xs text-[--text-tertiary]">Click any item in the timeline, or right-click for options</span>
+        <span className="text-sm">{t("detail.select")}</span>
+        <span className="text-xs text-[--text-tertiary]">{t("detail.selectHint")}</span>
       </div>
     );
   }
@@ -23,105 +25,80 @@ export function SpanDetail({ span }: SpanDetailProps) {
 
   let parsedArgsStr = "";
   if (mcpArgs) {
-    try {
-      parsedArgsStr = JSON.stringify(JSON.parse(mcpArgs), null, 2);
-    } catch {
-      parsedArgsStr = mcpArgs;
-    }
+    try { parsedArgsStr = JSON.stringify(JSON.parse(mcpArgs), null, 2); }
+    catch { parsedArgsStr = mcpArgs; }
   }
 
-  // Parse attachments
   let attachments: Attachment[] = [];
   const rawAttachments = span.attributes["agent_lens.attachments"];
   if (typeof rawAttachments === "string") {
-    try {
-      attachments = JSON.parse(rawAttachments);
-    } catch { /* ignore */ }
+    try { attachments = JSON.parse(rawAttachments); } catch {}
   }
 
   return (
     <div className="p-5 space-y-5 overflow-y-auto h-full">
-      {/* Header */}
       <div>
         <h2 className="text-base font-semibold">{span.name}</h2>
         <div className="flex gap-3 mt-1.5 text-xs text-[--text-tertiary] font-mono">
           <span>{span.spanId.slice(0, 8)}</span>
           <span>&middot;</span>
           <span>trace {span.traceId.slice(0, 8)}</span>
-          {span.parentSpanId && (
-            <>
-              <span>&middot;</span>
-              <span>parent {span.parentSpanId.slice(0, 8)}</span>
-            </>
-          )}
+          {span.parentSpanId && (<><span>&middot;</span><span>parent {span.parentSpanId.slice(0, 8)}</span></>)}
         </div>
       </div>
 
-      {/* Timing */}
-      <Section title="Timing">
+      <Section title={t("detail.timing")}>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-          <KV label="Started" value={new Date(span.startTime).toLocaleTimeString()} />
-          {span.endTime != null && <KV label="Ended" value={new Date(span.endTime).toLocaleTimeString()} />}
-          {span.endTime != null && (
-            <KV label="Duration" value={`${span.endTime - span.startTime}ms`} />
-          )}
-          <KV label="Status" value={span.status} />
+          <KV label={t("detail.started")} value={new Date(span.startTime).toLocaleTimeString()} />
+          {span.endTime != null && <KV label={t("detail.ended")} value={new Date(span.endTime).toLocaleTimeString()} />}
+          {span.endTime != null && <KV label={t("detail.duration")} value={`${span.endTime - span.startTime}ms`} />}
+          <KV label={t("detail.status")} value={span.status} />
         </div>
       </Section>
 
-      {/* Chain of Thought */}
       {reasoning.length > 0 ? (
-        <Section title="Reasoning">
-          <div className="text-[13px] bg-[--bg-tertiary] p-3.5 rounded-lg leading-relaxed whitespace-pre-wrap break-words text-[--text-primary]">
+        <Section title={t("detail.reasoning")}>
+          <div className="text-[13px] bg-[--bg-tertiary] p-3.5 rounded-lg leading-relaxed whitespace-pre-wrap break-words">
             {reasoning}
           </div>
         </Section>
       ) : null}
 
-      {/* Tool Arguments */}
       {parsedArgsStr.length > 0 ? (
-        <Section title="Arguments">
+        <Section title={t("detail.arguments")}>
           <pre className="text-xs font-mono bg-[--bg-tertiary] p-3.5 rounded-lg overflow-x-auto text-[--text-secondary]">
             {parsedArgsStr}
           </pre>
         </Section>
       ) : null}
 
-      {/* Cost */}
-      <CostBreakdown span={span} />
+      <CostBreakdown span={span} t={t} />
 
-      {/* Attachments */}
       {attachments.length > 0 ? (
-        <AttachmentViewer attachments={attachments} />
+        <Section title={t("detail.attachments")}>
+          <AttachmentViewer attachments={attachments} />
+        </Section>
       ) : null}
 
-      {/* Attributes */}
-      <Section title="Attributes">
+      <Section title={t("detail.attributes")}>
         <div className="space-y-1">
           {Object.entries(span.attributes as Record<string, unknown>)
             .filter(([, v]) => v !== undefined)
-            .map(([key, value]) => (
-              <KV key={key} label={key} value={String(value)} />
-            ))}
+            .map(([key, value]) => <KV key={key} label={key} value={String(value)} />)}
         </div>
       </Section>
 
-      {/* Events */}
       {span.events.length > 0 && (
-        <Section title="Events">
+        <Section title={t("detail.events")}>
           <div className="space-y-1.5">
             {span.events.map((event, i) => (
               <div key={i} className="text-xs bg-[--bg-tertiary] p-2.5 rounded-lg">
                 <div className="flex justify-between">
-                  <span className="font-medium text-[--text-primary]">{event.name}</span>
-                  <span className="text-[--text-tertiary] tabular-nums">
-                    {new Date(event.timestamp).toLocaleTimeString()}
-                  </span>
+                  <span className="font-medium">{event.name}</span>
+                  <span className="text-[--text-tertiary] tabular-nums">{new Date(event.timestamp).toLocaleTimeString()}</span>
                 </div>
                 {event.attributes && (
-                  <pre className="mt-1.5 text-[11px] font-mono text-[--text-tertiary]">
-                    {JSON.stringify(event.attributes, null, 2)}
-                  </pre>
+                  <pre className="mt-1.5 text-[11px] font-mono text-[--text-tertiary]">{JSON.stringify(event.attributes, null, 2)}</pre>
                 )}
               </div>
             ))}

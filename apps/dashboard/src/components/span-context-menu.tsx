@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { AgentSpan } from "@agent-lens/protocol";
+import type { TranslationKey } from "@/lib/i18n";
 
 interface SpanContextMenuProps {
   span: AgentSpan;
@@ -9,15 +10,10 @@ interface SpanContextMenuProps {
   onClose: () => void;
   onFork: (spanId: string, label: string) => void;
   onRewind: (spanId: string) => void;
+  t: (key: TranslationKey) => string;
 }
 
-export function SpanContextMenu({
-  span,
-  position,
-  onClose,
-  onFork,
-  onRewind,
-}: SpanContextMenuProps) {
+export function SpanContextMenu({ span, position, onClose, onFork, onRewind, t }: SpanContextMenuProps) {
   const [showForkInput, setShowForkInput] = useState(false);
   const [forkLabel, setForkLabel] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
@@ -26,15 +22,10 @@ export function SpanContextMenu({
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
     };
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEsc);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEsc);
-    };
+    return () => { document.removeEventListener("mousedown", handleClickOutside); document.removeEventListener("keydown", handleEsc); };
   }, [onClose]);
 
   const handleForkSubmit = () => {
@@ -54,53 +45,25 @@ export function SpanContextMenu({
             <div className="text-xs font-medium truncate">{span.name}</div>
             <div className="text-[11px] text-[--text-tertiary] font-mono mt-0.5">{span.spanId.slice(0, 12)}</div>
           </div>
-
           <div className="py-1">
-            <MenuItem
-              label="Fork here"
-              hint="Create a new branch"
-              onClick={() => setShowForkInput(true)}
-            />
-            <MenuItem
-              label="Rewind to this step"
-              hint="Reset agent state"
-              onClick={() => { onRewind(span.spanId); onClose(); }}
-            />
-
+            <MenuItem label={t("menu.forkHere")} hint={t("menu.forkDesc")} onClick={() => setShowForkInput(true)} />
+            <MenuItem label={t("menu.rewind")} hint={t("menu.rewindDesc")} onClick={() => { onRewind(span.spanId); onClose(); }} />
             <div className="border-t border-[--border] my-1" />
-
-            <MenuItem
-              label="Copy span ID"
-              hint={span.spanId.slice(0, 12)}
-              onClick={() => { navigator.clipboard.writeText(span.spanId); onClose(); }}
-            />
+            <MenuItem label={t("menu.copyId")} hint={span.spanId.slice(0, 12)} onClick={() => { navigator.clipboard.writeText(span.spanId); onClose(); }} />
           </div>
         </>
       ) : (
         <div className="p-3 space-y-2.5">
-          <div className="text-xs font-semibold">Create branch</div>
+          <div className="text-xs font-semibold">{t("menu.createBranch")}</div>
           <input
-            autoFocus
-            type="text"
-            placeholder="Branch label (optional)"
-            value={forkLabel}
+            autoFocus type="text" placeholder={t("menu.branchLabel")} value={forkLabel}
             onChange={(e) => setForkLabel(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleForkSubmit(); }}
             className="w-full px-3 py-1.5 text-xs bg-[--bg-tertiary] border border-[--border] rounded-lg focus:outline-none focus:border-[--accent-blue] placeholder:text-[--text-tertiary]"
           />
           <div className="flex gap-2">
-            <button
-              onClick={() => setShowForkInput(false)}
-              className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-[--border] text-[--text-secondary] hover:bg-[--bg-hover] cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleForkSubmit}
-              className="flex-1 px-2 py-1.5 text-xs rounded-lg bg-[--accent-blue] text-white font-medium hover:opacity-90 cursor-pointer"
-            >
-              Create
-            </button>
+            <button onClick={() => setShowForkInput(false)} className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-[--border] text-[--text-secondary] hover:bg-[--bg-hover] cursor-pointer">{t("menu.cancel")}</button>
+            <button onClick={handleForkSubmit} className="flex-1 px-2 py-1.5 text-xs rounded-lg bg-[--accent-blue] text-white font-medium hover:opacity-90 cursor-pointer">{t("menu.create")}</button>
           </div>
         </div>
       )}
@@ -108,20 +71,9 @@ export function SpanContextMenu({
   );
 }
 
-function MenuItem({
-  label,
-  hint,
-  onClick,
-}: {
-  label: string;
-  hint: string;
-  onClick: () => void;
-}) {
+function MenuItem({ label, hint, onClick }: { label: string; hint: string; onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[--bg-hover] transition-colors cursor-pointer"
-    >
+    <button onClick={onClick} className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[--bg-hover] transition-colors cursor-pointer">
       <span className="text-xs font-medium">{label}</span>
       <span className="text-[11px] text-[--text-tertiary]">{hint}</span>
     </button>
